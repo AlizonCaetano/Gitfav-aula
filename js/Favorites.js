@@ -1,38 +1,74 @@
-class Favorites{
+export class GithubSearch{
+    static search(user){
+        const endpoint = `https://api.github.com/users/${user}`
+
+        return fetch(endpoint)
+        .then(data => data.json())
+        .then(({ login, name, public_repos, followers}) => ({
+            login, 
+            name, 
+            public_repos,
+            followers
+        }))
+    }
+} 
+
+
+export class Favorites{
     constructor(root){
         this.root = document.querySelector(root)
-        this.tbody = this.root.querySelector('table tbody')
         this.load()
     }
 
     load(){
-        this.entries = [
-            {
-                login: 'AlizonCaetano',
-                name: 'Alison Caetano',
-                public_repos: '16',
-                followers: '1'
-            },
-             {
-                login: 'maykbrito',
-                name: 'Mayk Brito',
-                public_repos: '76',
-                followers: '120000'
+        this.entries = JSON.parse(localStorage.getItem('@github-favorites')) || []
+    }
+
+    save(){
+        localStorage.setItem('@github-favorites', JSON.stringify(this.entries))
+    }
+
+    async add(user){
+        try{
+            const gitUser = await GithubSearch.search(user)
+
+            if(gitUser.name === null || gitUser.name === undefined){
+                throw new Error('Usuário não encontrado')
             }
-        ]
+
+            this.entries = [gitUser, ...this.entries]
+            this.update()
+            this.save()
+
+        }catch(error){
+            alert(error.message)
+        }
     }
 
     delete(user){
         const filteredEntries = this.entries.filter(entry => user.login !== entry.login)
 
-        console.log(filteredEntries)
+        this.entries = filteredEntries
+        this.update()
+        this.save()
     }
 }
 
-class FavoritesView extends Favorites{
+export class FavoritesView extends Favorites{
     constructor(root){
         super(root)
+        this.tbody = this.root.querySelector('table tbody')
         this.update()
+        this.onadd()
+    }
+
+    onadd(){
+        const addButton = this.root.querySelector('.search button')
+
+        addButton.onclick = () => {
+            const { value } = this.root.querySelector('.search input')
+            this.add(value)
+        }
     }
 
     update(){
@@ -56,8 +92,6 @@ class FavoritesView extends Favorites{
 
             this.tbody.append(row)
         })
-
-
     }
 
     createRow(){
@@ -85,5 +119,3 @@ class FavoritesView extends Favorites{
         .forEach((tr)=> {tr.remove()})
     }
 }
-
-export default FavoritesView
