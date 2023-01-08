@@ -23,10 +23,6 @@ export class Favorites{
                 throw new Error('Usuário já existente')
             }
 
-            if(userExists){
-                throw new Error('a')
-            }
-
             const gitUser = await GithubSearch.search(user)
 
             if(gitUser.name === null || gitUser.name === undefined){
